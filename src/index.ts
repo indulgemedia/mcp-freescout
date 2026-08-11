@@ -9,7 +9,14 @@ import {
 } from './draft-recipients.js';
 import { FreeScoutAPI } from './freescout-api.js';
 import { TicketAnalyzer } from './ticket-analyzer.js';
-import { TicketAnalysisSchema, SearchFiltersSchema, type FreeScoutRecipients } from './types.js';
+import {
+  TicketAnalysisSchema,
+  SearchFiltersSchema,
+  ListOrganisationsSchema,
+  OrgTicketSearchSchema,
+  OrgConversationsSchema,
+  type FreeScoutRecipients,
+} from './types.js';
 import { loadEnv } from './env.js';
 
 type PackageJson = { version: string };
@@ -57,7 +64,8 @@ server.registerTool(
   'freescout_get_ticket',
   {
     title: 'Get FreeScout Ticket',
-    description: 'Fetch and analyze a FreeScout ticket by ID or URL',
+    description:
+      'Fetch and analyze a FreeScout ticket by ID or URL. The response includes the linked ClickUp task in "clickupTask" (id, url, name, listId) and every link in "clickupTasks"; both are absent or null when nothing is linked.',
     inputSchema: {
       ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
       includeThreads: z
@@ -83,7 +91,7 @@ server.registerTool(
   {
     title: 'Analyze FreeScout Ticket',
     description:
-      'Analyze a FreeScout ticket to determine issue type, root cause, and suggested solution',
+      'Analyze a FreeScout ticket to determine issue type, root cause, and suggested solution. Reports the linked ClickUp task in "clickupTask" when the ticket has one.',
     inputSchema: {
       ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
     },
@@ -297,6 +305,7 @@ server.registerTool(
       },
       subject: conversation.subject,
       status: conversation.status,
+      clickupTask: conversation.clickupTask ?? null,
       issueDescription: analysis.issueDescription,
       customerMessages: customerMessages.map((m) => ({
         date: m.created_at,
@@ -415,6 +424,52 @@ server.registerTool(
     return {
       content: [{ type: 'text', text: JSON.stringify(mailboxes, null, 2) }],
     };
+  }
+);
+
+// Tool 9: List Organisations
+server.registerTool(
+  'freescout_list_organisations',
+  {
+    title: 'List FreeScout Organisations',
+    description:
+      'List or search FreeScout organisations (companies). Use this to resolve an organisation name or email domain to an organisation ID for org-scoped ticket search.',
+    inputSchema: ListOrganisationsSchema,
+  },
+  async (params) => {
+    const result = await api.listOrganisations(params);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+// Tool 10: Org-aware Ticket Search (the reliable per-client search)
+server.registerTool(
+  'freescout_ticket_search',
+  {
+    title: 'Org-aware Ticket Search',
+    description:
+      'Search FreeScout tickets scoped to an organisation — the reliable per-client search. Filter by organisationId or organisationDomain plus status/state/assignee/dates etc. Returns the full matching history (not just recent pages). Response is the standard {_embedded.conversations, page} shape; page.totalElements is the real count.',
+    inputSchema: OrgTicketSearchSchema,
+  },
+  async (filters) => {
+    const result = await api.ticketSearch(filters);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+// Tool 11: Organisation Conversations (org forced via path)
+server.registerTool(
+  'freescout_org_conversations',
+  {
+    title: 'Organisation Conversations',
+    description:
+      'List all conversations for a specific organisation ID (organisation is forced). Same filters as freescout_ticket_search.',
+    inputSchema: OrgConversationsSchema,
+  },
+  async (filters) => {
+    const { organisationId, ...rest } = filters;
+    const result = await api.getOrganisationConversations(organisationId, rest);
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
   }
 );
 

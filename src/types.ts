@@ -30,6 +30,16 @@ export const CustomerSchema = z.object({
   phone: z.string().optional(),
 });
 
+// A ClickUp task linked to a conversation, added to the FreeScout API response
+// by the ClickUp module (Modules/ClickUp/Http/Middleware/InjectClickUpTasks.php).
+export const ClickUpTaskSchema = z.object({
+  id: z.string(),
+  url: z.string().optional(),
+  name: z.string().optional(),
+  listId: z.string().optional(),
+  linkedAt: z.string().nullable().optional(),
+});
+
 export const ConversationSchema = z.object({
   id: z.number(),
   number: z.number(),
@@ -44,6 +54,8 @@ export const ConversationSchema = z.object({
   to: z.array(z.string()).optional(),
   cc: z.array(z.string()).optional(),
   bcc: z.array(z.string()).optional(),
+  clickupTask: ClickUpTaskSchema.nullable().optional(),
+  clickupTasks: z.array(ClickUpTaskSchema).optional(),
   _embedded: z
     .object({
       threads: z.array(ThreadSchema).optional(),
@@ -86,6 +98,7 @@ export const TicketAnalysisSchema = z.object({
   isBug: z.boolean(),
   isThirdPartyIssue: z.boolean(),
   rootCause: z.string().optional(),
+  clickupTask: ClickUpTaskSchema.nullable().optional(),
 });
 
 // Search filter schemas
@@ -102,11 +115,60 @@ export const SearchFiltersSchema = z.object({
   includeLastMessage: z.boolean().optional(), // Include the most recent message for each ticket
 });
 
+// Organisation API schemas (FreeScout ApiWebhooks organisation endpoints)
+export const ListOrganisationsSchema = z.object({
+  search: z.string().optional().describe('Search by organisation name or domain'),
+  domain: z.string().optional().describe('Exact domain match, e.g. "thechateaubee.com"'),
+  sortField: z.enum(['name', 'createdAt', 'customersCount']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  page: z.number().min(1).optional(),
+  pageSize: z.number().min(1).max(200).optional(),
+});
+
+export const OrgTicketSearchSchema = z.object({
+  organisationId: z
+    .number()
+    .optional()
+    .describe('Organisation ID (resolve via freescout_list_organisations)'),
+  organisationDomain: z.string().optional().describe('Organisation domain, e.g. "thechateaubee.com"'),
+  status: z.string().optional().describe('CSV of active,pending,closed,spam'),
+  state: z.string().optional().describe('published (default), all, or CSV of draft,published,deleted'),
+  type: z.string().optional().describe('email, phone, or chat'),
+  assignedTo: z.string().optional().describe('CSV of user IDs; "unassigned" or empty = no assignee'),
+  mailboxId: z.string().optional().describe('CSV of mailbox IDs'),
+  folderId: z.string().optional().describe('CSV of folder IDs'),
+  customerId: z.number().optional(),
+  customerEmail: z.string().optional(),
+  number: z.string().optional().describe('Ticket number lookup'),
+  subject: z.string().optional(),
+  q: z.string().optional().describe('Free text over subject + preview'),
+  createdSince: z.string().optional().describe('ISO-8601 UTC, or relative like "7d"/"24h"'),
+  createdBefore: z.string().optional(),
+  updatedSince: z.string().optional(),
+  updatedBefore: z.string().optional(),
+  waitingSince: z.string().optional(),
+  waitingBefore: z.string().optional(),
+  embed: z.string().optional().describe('CSV of threads,timelogs,tags'),
+  sortField: z.enum(['createdAt', 'updatedAt', 'waitingSince', 'number', 'subject']).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  page: z.number().min(1).optional(),
+  pageSize: z.number().min(1).max(200).optional(),
+});
+
+export const OrgConversationsSchema = OrgTicketSearchSchema.extend({
+  organisationId: z.number().describe('Organisation ID (required; org is forced)'),
+});
+
+export type ListOrganisationsParams = z.infer<typeof ListOrganisationsSchema>;
+export type OrgTicketSearchFilters = z.infer<typeof OrgTicketSearchSchema>;
+export type OrgConversationsParams = z.infer<typeof OrgConversationsSchema>;
+
 // TypeScript types inferred from Zod schemas
 export type FreeScoutAttachment = z.infer<typeof AttachmentSchema>;
 export type FreeScoutThread = z.infer<typeof ThreadSchema>;
 export type FreeScoutCustomer = z.infer<typeof CustomerSchema>;
 export type FreeScoutConversation = z.infer<typeof ConversationSchema>;
+export type FreeScoutClickUpTask = z.infer<typeof ClickUpTaskSchema>;
 export type FreeScoutApiResponse<T = unknown> = z.infer<typeof ApiResponseSchema> & { data?: T };
 export type TicketAnalysis = z.infer<typeof TicketAnalysisSchema>;
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;

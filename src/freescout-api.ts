@@ -4,6 +4,8 @@ import type {
   FreeScoutRecipients,
   FreeScoutThread,
   SearchFilters,
+  ListOrganisationsParams,
+  OrgTicketSearchFilters,
 } from './types.js';
 
 interface RetryOptions {
@@ -526,6 +528,63 @@ export class FreeScoutAPI {
 
   async getMailboxes(): Promise<unknown> {
     return this.request<unknown>('/mailboxes');
+  }
+
+  /**
+   * Build query params for the organisation ticket-search / org-conversations endpoints.
+   * Skips undefined/null/empty values; converts relative dates ("7d") on *Since/*Before fields.
+   */
+  private buildOrgTicketParams(filters: Record<string, unknown>): URLSearchParams {
+    const params = new URLSearchParams();
+    const dateFields = new Set([
+      'createdSince',
+      'createdBefore',
+      'updatedSince',
+      'updatedBefore',
+      'waitingSince',
+      'waitingBefore',
+    ]);
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined || value === null || value === '') continue;
+      if (dateFields.has(key) && typeof value === 'string') {
+        params.append(key, this.parseRelativeTime(value) || value);
+      } else {
+        params.append(key, String(value));
+      }
+    }
+    return params;
+  }
+
+  /**
+   * List/search organisations (FreeScout ApiWebhooks organisation endpoints).
+   */
+  async listOrganisations(params: ListOrganisationsParams): Promise<unknown> {
+    const qs = this.buildOrgTicketParams(params as Record<string, unknown>);
+    return this.request<unknown>(`/organisations?${qs.toString()}`);
+  }
+
+  /**
+   * Org-aware ticket search — the reliable per-client search.
+   * Scope by organisationId or organisationDomain; returns the full matching history.
+   */
+  async ticketSearch(filters: OrgTicketSearchFilters): Promise<unknown> {
+    const qs = this.buildOrgTicketParams(filters as Record<string, unknown>);
+    return this.request<unknown>(`/ticket-search?${qs.toString()}`);
+  }
+
+  /**
+   * List conversations for a specific organisation (org forced via the path).
+   */
+  async getOrganisationConversations(
+    orgId: number,
+    filters: Record<string, unknown> = {}
+  ): Promise<unknown> {
+    // org is in the path; drop any org keys from the query string
+    const { organisationId: _oid, organisationDomain: _od, ...rest } = filters;
+    void _oid;
+    void _od;
+    const qs = this.buildOrgTicketParams(rest);
+    return this.request<unknown>(`/organisations/${orgId}/conversations?${qs.toString()}`);
   }
 
   extractTicketIdFromUrl(url: string): string | null {

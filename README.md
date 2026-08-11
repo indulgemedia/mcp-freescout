@@ -181,6 +181,30 @@ Fetch a FreeScout ticket with all its details and conversation threads.
 
 ![FreeScout ticket details and conversation threads displayed in Cursor chat interface](https://github.com/user-attachments/assets/0144056d-f6d6-4275-9f55-dade0be3ba8c)
 
+**Linked ClickUp task (Indulge fork):**
+
+When the FreeScout instance runs the Indulge ClickUp module, every conversation payload
+carries the linked task, so `freescout_get_ticket`, `freescout_get_ticket_context`,
+`freescout_analyze_ticket` and the search tools all report it:
+
+```json
+{
+  "id": 1984,
+  "subject": "Checkout fails on Safari",
+  "clickupTask": {
+    "id": "86c1abcde",
+    "url": "https://app.clickup.com/t/86c1abcde",
+    "name": "Fix checkout bug",
+    "listId": "901234567",
+    "linkedAt": "2026-08-11T15:53:19Z"
+  },
+  "clickupTasks": [{ "id": "86c1abcde" }]
+}
+```
+
+`clickupTask` is the most recent link, or `null` when the ticket has none. `clickupTasks`
+lists every link, newest first. Stock FreeScout instances omit both keys.
+
 #### `freescout_analyze_ticket`
 
 Analyze a ticket to determine issue type, root cause, and suggested solutions.

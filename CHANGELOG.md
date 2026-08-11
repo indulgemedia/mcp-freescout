@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] (2026-08-11) — Indulge fork
+
+
+### Features
+
+* **clickup:** report the linked ClickUp task on tickets. The FreeScout ClickUp module adds
+  `clickupTask` (id, url, name, listId, linkedAt) and `clickupTasks` to every conversation in
+  the API response, so `freescout_get_ticket`, `freescout_search_tickets`,
+  `freescout_ticket_search` and `freescout_org_conversations` pass it through, and
+  `freescout_get_ticket_context` plus `freescout_analyze_ticket` report it explicitly. Both keys
+  are absent on stock FreeScout instances.
+* **install:** add a `prepare` script so `npx github:indulgemedia/mcp-freescout` builds on
+  install, with no clone-and-build step for the team.
+
+## [2.2.0] (2026-06-25) — Indulge fork
+
+
+### Features
+
+* **organisation API:** add `freescout_list_organisations`, `freescout_ticket_search` (org-scoped,
+  the reliable per-client search via `organisationId`/`organisationDomain`), and
+  `freescout_org_conversations` tools, mapping to the FreeScout ApiWebhooks organisation endpoints
+  (`/api/organisations`, `/api/ticket-search`, `/api/organisations/{id}/conversations`). Returns the
+  standard `{_embedded.conversations, page}` shape; `page.totalElements` read correctly (camelCase).
+
 ## [2.1.1](https://github.com/verygoodplugins/mcp-freescout/compare/v2.1.0...v2.1.1) (2026-04-23)
 
 

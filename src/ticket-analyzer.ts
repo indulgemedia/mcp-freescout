@@ -41,6 +41,7 @@ export class TicketAnalyzer {
       isThirdPartyIssue: analysis.isThirdParty,
       rootCause: analysis.rootCause,
       suggestedSolution: analysis.suggestedSolution,
+      clickupTask: conversation.clickupTask ?? null,
     };
   }
 
