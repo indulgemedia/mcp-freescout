@@ -300,6 +300,73 @@ describe('FreeScoutAPI', () => {
     });
   });
 
+  describe('linkClickUpTask', () => {
+    const linked = {
+      conversationId: 11287,
+      clickupTask: {
+        id: '869fk10yq',
+        url: 'https://app.clickup.com/t/869fk10yq',
+        name: 'Remove specialist services content',
+        listId: '901223475883',
+        linkedAt: '2026-10-19T15:40:00Z',
+      },
+      commentAdded: true,
+    };
+
+    it('should post the task to the conversation link endpoint', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => linked,
+      });
+
+      const result = await api.linkClickUpTask('11287', '869fk10yq', 2);
+
+      expect(result).toEqual(linked);
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockBaseUrl}/api/conversations/11287/clickup_tasks`,
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'X-FreeScout-API-Key': mockApiKey,
+            'Content-Type': 'application/json',
+          }),
+        })
+      );
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+        taskId: '869fk10yq',
+        userId: 2,
+      });
+    });
+
+    it('should leave userId out when none is given', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => linked,
+      });
+
+      await api.linkClickUpTask('11287', 'https://app.clickup.com/t/869fk10yq');
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+        taskId: 'https://app.clickup.com/t/869fk10yq',
+      });
+    });
+
+    it('should not retry when the task is already linked', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        text: async () => 'This task is already linked to this conversation',
+      });
+
+      await expect(api.linkClickUpTask('11287', '869fk10yq')).rejects.toThrow(
+        'FreeScout API error: 409'
+      );
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('addThread', () => {
     it('should add a thread to a conversation', async () => {
       mockFetch.mockResolvedValueOnce({

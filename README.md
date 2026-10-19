@@ -205,6 +205,21 @@ carries the linked task, so `freescout_get_ticket`, `freescout_get_ticket_contex
 `clickupTask` is the most recent link, or `null` when the ticket has none. `clickupTasks`
 lists every link, newest first. Stock FreeScout instances omit both keys.
 
+#### `freescout_link_clickup_task` (Indulge fork)
+
+Link an existing ClickUp task to a ticket, the same as **Link Existing** in the ticket's ClickUp
+panel. The task then shows in the panel and in `clickupTasks`, and ClickUp gets a comment on the
+task with the ticket URL. Needs the Indulge ClickUp module's
+`POST /api/conversations/{id}/clickup_tasks` route on the server.
+
+**Parameters:**
+- `ticket`: Ticket ID, number, or FreeScout URL
+- `task`: ClickUp task ID (`869fk10yq`) or task URL (`https://app.clickup.com/t/869fk10yq`)
+- `userId` (optional): FreeScout user recorded as the linker (defaults to `FREESCOUT_DEFAULT_USER_ID`)
+
+Returns `conversationId`, `clickupTask` and `commentAdded`. A task already linked to the ticket
+fails with `409`.
+
 #### `freescout_analyze_ticket`
 
 Analyze a ticket to determine issue type, root cause, and suggested solutions.

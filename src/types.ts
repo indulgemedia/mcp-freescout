@@ -40,6 +40,14 @@ export const ClickUpTaskSchema = z.object({
   linkedAt: z.string().nullable().optional(),
 });
 
+// Response from POST /api/conversations/{id}/clickup_tasks, the ClickUp module's
+// link endpoint (Modules/ClickUp/Http/Controllers/Api/ClickUpApiController.php).
+export const ClickUpLinkSchema = z.object({
+  conversationId: z.number(),
+  clickupTask: ClickUpTaskSchema,
+  commentAdded: z.boolean(),
+});
+
 export const ConversationSchema = z.object({
   id: z.number(),
   number: z.number(),
@@ -169,6 +177,7 @@ export type FreeScoutThread = z.infer<typeof ThreadSchema>;
 export type FreeScoutCustomer = z.infer<typeof CustomerSchema>;
 export type FreeScoutConversation = z.infer<typeof ConversationSchema>;
 export type FreeScoutClickUpTask = z.infer<typeof ClickUpTaskSchema>;
+export type FreeScoutClickUpLink = z.infer<typeof ClickUpLinkSchema>;
 export type FreeScoutApiResponse<T = unknown> = z.infer<typeof ApiResponseSchema> & { data?: T };
 export type TicketAnalysis = z.infer<typeof TicketAnalysisSchema>;
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;

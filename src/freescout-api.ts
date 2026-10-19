@@ -1,4 +1,5 @@
 import type {
+  FreeScoutClickUpLink,
   FreeScoutConversation,
   FreeScoutApiResponse,
   FreeScoutRecipients,
@@ -585,6 +586,29 @@ export class FreeScoutAPI {
     void _od;
     const qs = this.buildOrgTicketParams(rest);
     return this.request<unknown>(`/organisations/${orgId}/conversations?${qs.toString()}`);
+  }
+
+  /**
+   * Link a ClickUp task to a conversation, as the ticket's ClickUp panel does
+   * with "Link Existing". Needs the ClickUp module's API route on the server.
+   * `task` is a ClickUp task ID or an https://app.clickup.com/t/<id> URL.
+   */
+  async linkClickUpTask(
+    ticketId: string,
+    task: string,
+    userId?: number
+  ): Promise<FreeScoutClickUpLink> {
+    const body: { taskId: string; userId?: number } = { taskId: task };
+
+    if (userId) {
+      body.userId = userId;
+    }
+
+    return this.request<FreeScoutClickUpLink>(
+      `/conversations/${ticketId}/clickup_tasks`,
+      'POST',
+      body
+    );
   }
 
   extractTicketIdFromUrl(url: string): string | null {

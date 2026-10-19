@@ -473,6 +473,40 @@ server.registerTool(
   }
 );
 
+// Tool 12: Link a ClickUp task to a ticket
+server.registerTool(
+  'freescout_link_clickup_task',
+  {
+    title: 'Link ClickUp Task to Ticket',
+    description:
+      'Link an existing ClickUp task to a FreeScout ticket, the same as "Link Existing" in the ticket\'s ClickUp panel. The task then shows in the panel and in "clickupTasks" on freescout_get_ticket, and ClickUp gets a comment on the task with the ticket URL. Fails with 409 if the task is already linked to the ticket.',
+    inputSchema: {
+      ticket: z.string().describe('Ticket ID, ticket number, or FreeScout URL'),
+      task: z
+        .string()
+        .describe(
+          'ClickUp task ID (e.g. 869fk10yq) or task URL (https://app.clickup.com/t/869fk10yq)'
+        ),
+      userId: z
+        .number()
+        .optional()
+        .describe('FreeScout user recorded as the linker (default: from env)'),
+    },
+  },
+  async ({ ticket, task, userId }) => {
+    const ticketId = api.parseTicketInput(ticket);
+    const result = await api.linkClickUpTask(
+      ticketId,
+      task.trim(),
+      userId ?? DEFAULT_USER_ID
+    );
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();
