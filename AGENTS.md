@@ -112,7 +112,7 @@ Build output lands in `dist/` (do not edit directly); `dist/index.js` is the CLI
 
 ## MCP Tools
 
-The server registers **8 tools**, all prefixed `freescout_`. (There are no Git/GitHub or "implement ticket" tools — the server only talks to the FreeScout API.)
+The server registers **9 tools**, all prefixed `freescout_`. (There are no Git/GitHub or "implement ticket" tools — the server only talks to the FreeScout API.)
 
 1. **freescout_get_ticket** — Fetch a ticket by ID, number, or URL, optionally with all conversation threads (`includeThreads`, default true).
 2. **freescout_analyze_ticket** — Analyze a ticket to determine issue type, root cause, and suggested solution (returns structured `TicketAnalysis`).
@@ -122,6 +122,7 @@ The server registers **8 tools**, all prefixed `freescout_`. (There are no Git/G
 6. **freescout_get_ticket_context** — Get condensed ticket + customer context to help draft personalized replies.
 7. **freescout_search_tickets** — Search with explicit filters (`textSearch`, `assignee` `"unassigned"`/`"any"`/number, `updatedSince`/`createdSince` ISO or relative like `7d`/`24h`, `mailboxId`, `status`, `state`, `page`/`pageSize`, `includeLastMessage`).
 8. **freescout_get_mailboxes** — List available mailboxes.
+9. **freescout_create_ticket** — Create a new ticket with one first thread (`threadType` `customer` default, `note`, or `message`, which emails the customer). Needs `mailboxId`, `subject`, `text`, and `customerEmail` or `customerId`; `imported: true` suppresses emails and notifications.
 
 ## Environment Variables
 

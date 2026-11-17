@@ -367,6 +367,83 @@ describe('FreeScoutAPI', () => {
     });
   });
 
+  describe('createConversation', () => {
+    const created = {
+      id: 11400,
+      number: 11400,
+      subject: 'Site down',
+      status: 'active',
+    };
+    const ok = { ok: true, status: 201, json: async () => created };
+
+    it('should post a customer thread with the customer attached', async () => {
+      mockFetch.mockResolvedValueOnce(ok);
+
+      const result = await api.createConversation({
+        mailboxId: 1,
+        subject: 'Site down',
+        text: 'Our site is down.',
+        customer: { email: 'mark@example.org', firstName: 'Mark' },
+      });
+
+      expect(result).toEqual(created);
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockBaseUrl}/api/conversations`,
+        expect.objectContaining({ method: 'POST' })
+      );
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+        type: 'email',
+        mailboxId: 1,
+        subject: 'Site down',
+        customer: { email: 'mark@example.org', firstName: 'Mark' },
+        threads: [
+          {
+            type: 'customer',
+            text: 'Our site is down.',
+            customer: { email: 'mark@example.org', firstName: 'Mark' },
+          },
+        ],
+      });
+    });
+
+    it('should set the user on a note thread and pass options', async () => {
+      mockFetch.mockResolvedValueOnce(ok);
+
+      await api.createConversation({
+        mailboxId: 2,
+        subject: 'Follow up',
+        text: '**Call** the client',
+        customer: { id: 55, email: undefined },
+        threadType: 'note',
+        userId: 7,
+        assignTo: 7,
+        status: 'pending',
+        cc: ['anna@example.org'],
+        imported: true,
+      });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.customer).toEqual({ id: 55 });
+      expect(body.assignTo).toBe(7);
+      expect(body.status).toBe('pending');
+      expect(body.imported).toBe(true);
+      expect(body.threads).toHaveLength(1);
+      expect(body.threads[0]).toMatchObject({
+        type: 'note',
+        user: 7,
+        cc: ['anna@example.org'],
+      });
+      expect(body.threads[0].customer).toBeUndefined();
+      expect(body.threads[0].text).toContain('<strong>Call</strong>');
+    });
+
+    it('should build the web URL for a conversation', () => {
+      expect(api.conversationUrl(11400)).toBe(
+        `${mockBaseUrl}/conversation/11400`
+      );
+    });
+  });
+
   describe('addThread', () => {
     it('should add a thread to a conversation', async () => {
       mockFetch.mockResolvedValueOnce({

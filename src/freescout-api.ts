@@ -1,4 +1,5 @@
 import type {
+  CreateConversationParams,
   FreeScoutClickUpLink,
   FreeScoutConversation,
   FreeScoutApiResponse,
@@ -396,6 +397,52 @@ export class FreeScoutAPI {
     recipients?: FreeScoutRecipients
   ): Promise<FreeScoutThread> {
     return this.addThread(ticketId, 'message', text, userId, 'draft', recipients);
+  }
+
+  /**
+   * Create a new conversation (ticket) with one thread.
+   * POST /api/conversations needs `user` on message and note threads and
+   * `customer` on customer threads, so this method fills in both.
+   */
+  async createConversation(
+    params: CreateConversationParams
+  ): Promise<FreeScoutConversation> {
+    const threadType = params.threadType ?? 'customer';
+    const customer = Object.fromEntries(
+      Object.entries(params.customer).filter(([, value]) => value !== undefined)
+    );
+
+    const thread: Record<string, unknown> = {
+      type: threadType,
+      text: this.formatForFreeScoutEditor(params.text),
+    };
+    if (threadType === 'customer') {
+      thread.customer = customer;
+    } else if (params.userId) {
+      thread.user = params.userId;
+    }
+    if (params.cc?.length) thread.cc = params.cc;
+    if (params.bcc?.length) thread.bcc = params.bcc;
+
+    const body: Record<string, unknown> = {
+      type: params.conversationType ?? 'email',
+      mailboxId: params.mailboxId,
+      subject: params.subject,
+      customer,
+      threads: [thread],
+    };
+    if (params.assignTo) body.assignTo = params.assignTo;
+    if (params.status) body.status = params.status;
+    if (params.imported) body.imported = true;
+
+    return this.request<FreeScoutConversation>('/conversations', 'POST', body);
+  }
+
+  /**
+   * The web URL for a conversation, for linking people to a new ticket.
+   */
+  conversationUrl(conversationId: number | string): string {
+    return `${this.baseUrl}/conversation/${conversationId}`;
   }
 
   async updateConversation(

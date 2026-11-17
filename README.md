@@ -220,6 +220,32 @@ task with the ticket URL. Needs the Indulge ClickUp module's
 Returns `conversationId`, `clickupTask` and `commentAdded`. A task already linked to the ticket
 fails with `409`.
 
+#### `freescout_create_ticket`
+
+Create a new ticket (conversation) with one first thread. FreeScout finds the customer by
+email, or creates them if they do not exist. Markdown in `text` is converted to HTML.
+
+**Parameters:**
+- `mailboxId` (required): Mailbox ID (see `freescout_get_mailboxes`)
+- `subject` (required): Ticket subject
+- `text` (required): Body of the first thread
+- `customerEmail` or `customerId` (one required): The customer
+- `customerFirstName`, `customerLastName` (optional): Used only when FreeScout creates a new customer
+- `threadType` (optional): `customer` (default, logged as from the customer), `note` (internal note), or `message` (**emails the customer**)
+- `conversationType` (optional): `email` (default), `phone` or `chat`
+- `userId` (optional): Author of a `note` or `message` thread (defaults to `FREESCOUT_DEFAULT_USER_ID`)
+- `assignTo` (optional): User ID to assign the ticket to
+- `status` (optional): `active`, `pending` or `closed`
+- `cc`, `bcc` (optional): Extra recipients for the thread
+- `imported` (optional): `true` sends no emails, notifications or auto-reply
+
+Returns `ticketId`, `number`, `subject`, `status` and the ticket `url`.
+
+**Natural Language Examples:**
+
+- "Open a ticket in the Support mailbox for mark@example.org: their contact form is broken"
+- "Log a phone call from Anna as a new ticket and assign it to me"
+
 #### `freescout_analyze_ticket`
 
 Analyze a ticket to determine issue type, root cause, and suggested solutions.

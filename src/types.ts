@@ -181,6 +181,25 @@ export type FreeScoutClickUpLink = z.infer<typeof ClickUpLinkSchema>;
 export type FreeScoutApiResponse<T = unknown> = z.infer<typeof ApiResponseSchema> & { data?: T };
 export type TicketAnalysis = z.infer<typeof TicketAnalysisSchema>;
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
+export interface CreateConversationParams {
+  mailboxId: number;
+  subject: string;
+  text: string;
+  customer: {
+    email?: string;
+    id?: number;
+    firstName?: string;
+    lastName?: string;
+  };
+  threadType?: 'customer' | 'message' | 'note';
+  conversationType?: 'email' | 'phone' | 'chat';
+  userId?: number;
+  assignTo?: number;
+  status?: 'active' | 'pending' | 'closed';
+  cc?: string[];
+  bcc?: string[];
+  imported?: boolean;
+}
 export interface FreeScoutRecipients {
   to?: string[];
   cc?: string[];

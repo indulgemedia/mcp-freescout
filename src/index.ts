@@ -507,6 +507,115 @@ server.registerTool(
   }
 );
 
+// Tool 13: Create a new ticket
+server.registerTool(
+  'freescout_create_ticket',
+  {
+    title: 'Create Ticket',
+    description:
+      'Create a new FreeScout ticket (conversation) with one first thread. threadType "customer" (default) logs the text as a message from the customer. "note" starts the ticket with an internal note. "message" sends the text to the customer as an email from the mailbox, so only use it when the user asked to email the customer. FreeScout finds the customer by email and creates them if they do not exist. Unless imported is true, FreeScout sends its usual notifications and mailbox auto-reply. Use freescout_get_mailboxes to find the mailboxId.',
+    inputSchema: {
+      mailboxId: z.number().describe('Mailbox ID (see freescout_get_mailboxes)'),
+      subject: z.string().min(1).describe('Ticket subject'),
+      text: z
+        .string()
+        .min(1)
+        .describe('Body of the first thread (Markdown is converted to HTML)'),
+      customerEmail: z
+        .string()
+        .email()
+        .optional()
+        .describe('Customer email. Give this or customerId.'),
+      customerId: z
+        .number()
+        .optional()
+        .describe('Existing FreeScout customer ID. Overrides customerEmail.'),
+      customerFirstName: z
+        .string()
+        .optional()
+        .describe('First name, used only when FreeScout creates a new customer'),
+      customerLastName: z
+        .string()
+        .optional()
+        .describe('Last name, used only when FreeScout creates a new customer'),
+      threadType: z
+        .enum(['customer', 'note', 'message'])
+        .optional()
+        .default('customer')
+        .describe(
+          'customer = from the customer (default); note = internal note; message = email to the customer (sends it)'
+        ),
+      conversationType: z
+        .enum(['email', 'phone', 'chat'])
+        .optional()
+        .default('email')
+        .describe('Conversation type (default email)'),
+      userId: z
+        .number()
+        .optional()
+        .describe('Author of a note or message thread (default: from env)'),
+      assignTo: z.number().optional().describe('User ID to assign the ticket to'),
+      status: z
+        .enum(['active', 'pending', 'closed'])
+        .optional()
+        .describe('Initial status (FreeScout default: active)'),
+      cc: z.array(z.string().email()).optional().describe('CC addresses for the thread'),
+      bcc: z.array(z.string().email()).optional().describe('BCC addresses for the thread'),
+      imported: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          'true = no emails, notifications or auto-reply (for logging past conversations)'
+        ),
+    },
+  },
+  async params => {
+    if (params.customerId === undefined && !params.customerEmail) {
+      throw new Error('Give customerEmail or customerId');
+    }
+
+    const threadType = params.threadType ?? 'customer';
+    const conversation = await api.createConversation({
+      mailboxId: params.mailboxId,
+      subject: params.subject,
+      text: params.text,
+      customer: {
+        id: params.customerId,
+        email: params.customerEmail,
+        firstName: params.customerFirstName,
+        lastName: params.customerLastName,
+      },
+      threadType,
+      conversationType: params.conversationType ?? 'email',
+      userId: threadType === 'customer' ? undefined : (params.userId ?? DEFAULT_USER_ID),
+      assignTo: params.assignTo,
+      status: params.status,
+      cc: params.cc,
+      bcc: params.bcc,
+      imported: params.imported ?? false,
+    });
+
+    const output = {
+      success: true,
+      ticketId: conversation.id,
+      number: conversation.number,
+      subject: conversation.subject,
+      status: conversation.status,
+      url: api.conversationUrl(conversation.id),
+    };
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Created ticket #${output.number}: ${output.subject}\n${output.url}\n\n${JSON.stringify(output, null, 2)}`,
+        },
+      ],
+    };
+  }
+);
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();
